@@ -1,0 +1,41 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Text & Speech Converter</title>
+    
+    <!-- Шрифты -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+    
+    <!-- Стили -->
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/normalize.css') }}">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/animations.css') }}">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+</head>
+<body>
+    <header class="header">
+        <div class="header_container">
+            <div class="header_block_descr flex">
+                <p class="header_descr header_descr_left">Text to Speech</p>
+                <p class="header_descr">Speech to Text</p>
+            </div>
+        </div>
+    </header>
+
+    <main class="main">
+        <div class="main_container">
+            {% block content %}{% endblock %}
+        </div>
+    </main>
+
+    <footer class="footer">
+        <div class="container">
+            <p class="footer_text">© 2024 Text & Speech Converter</p>
+        </div>
+    </footer>
+
+    <!-- Подключаем скрипты -->
+    <script src="{{ url_for('static', filename='css/script.js') }}"></script>
+</body>
+</html>

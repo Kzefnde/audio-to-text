@@ -1,0 +1,69 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="result-container fade-in">
+    {% if result %}
+    <!-- Результат Text to Speech -->
+    <div class="result-block">
+        <h2 class="result-title">Результат преобразования текста в речь</h2>
+        <div class="result-content">
+            <div class="text-preview">
+                <h3>Исходный текст:</h3>
+                <p>{{ text }}</p>
+            </div>
+            <div class="audio-controls">
+                <button class="control-btn play-btn" onclick="playAudio('{{ result }}')">
+                    <img src="{{ url_for('static', filename='image/play_arrow.svg') }}" alt="Play">
+                    <span>Прослушать</span>
+                </button>
+                <a href="{{ result }}" download class="control-btn download-btn">
+                    <img src="{{ url_for('static', filename='image/download.svg') }}" alt="Download">
+                    <span>Скачать аудио</span>
+                </a>
+            </div>
+        </div>
+    </div>
+    {% endif %}
+
+    {% if result_text %}
+    <!-- Результат Speech to Text -->
+    <div class="result-block">
+        <h2 class="result-title">Результат преобразования речи в текст</h2>
+        <div class="result-content">
+            <div class="text-preview">
+                <h3>Распознанный текст:</h3>
+                <p>{{ result_text }}</p>
+            </div>
+            <div class="audio-controls">
+                <a href="{{ result_file }}" download class="control-btn download-btn">
+                    <img src="{{ url_for('static', filename='image/download.svg') }}" alt="Download">
+                    <span>Скачать исходный файл</span>
+                </a>
+            </div>
+        </div>
+    </div>
+    {% endif %}
+
+    <a href="{{ url_for('index') }}" class="back-btn">
+        <img src="{{ url_for('static', filename='image/airline_stops.svg') }}" alt="Back">
+        <span>Вернуться на главную</span>
+    </a>
+</div>
+
+<script>
+function playAudio(src) {
+    const btn = event.currentTarget;
+    const audio = new Audio(src);
+    
+    btn.classList.add('playing');
+    
+    audio.play().then(() => {
+        audio.onended = () => btn.classList.remove('playing');
+    }).catch(error => {
+        console.error('Error playing audio:', error);
+        btn.classList.remove('playing');
+    });
+}
+</script>
+{% endblock %}
+

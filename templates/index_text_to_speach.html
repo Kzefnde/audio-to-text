@@ -1,0 +1,42 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="converter-container">
+    <!-- Text to Speech форма -->
+    <div class="converter-block">
+        <h2 class="block-title">Преобразование текста в речь</h2>
+        <form method="POST" class="converter-form">
+            <div class="form-group">
+                <textarea 
+                    name="text" 
+                    class="form-textarea custom-scroll-text" 
+                    placeholder="Введите текст для преобразования в речь..."
+                    required
+                ></textarea>
+            </div>
+            <button type="submit" class="submit-btn">
+                <span>Преобразовать в речь</span>
+                <img src="{{ url_for('static', filename='image/wave.svg') }}" alt="Convert">
+            </button>
+        </form>
+    </div>
+
+    <!-- Speech to Text форма -->
+    <div class="converter-block">
+        <h2 class="block-title">Преобразование речи в текст</h2>
+        <form method="POST" enctype="multipart/form-data" class="converter-form">
+            <div class="file-upload-area">
+                <input type="file" name="file" id="file-input" class="file-input" accept="audio/*" required>
+                <label for="file-input" class="file-label">
+                    <img src="{{ url_for('static', filename='image/upload.svg') }}" alt="Upload" class="upload-icon">
+                    <span class="upload-text">Перетащите аудиофайл или нажмите для выбора</span>
+                </label>
+            </div>
+            <button type="submit" class="submit-btn">
+                <span>Преобразовать в текст</span>
+                <img src="{{ url_for('static', filename='image/wave.svg') }}" alt="Convert">
+            </button>
+        </form>
+    </div>
+</div>
+{% endblock %}
