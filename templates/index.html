@@ -1,0 +1,17 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="nav-container">
+    <h1>Выберите режим работы</h1>
+    <div class="nav-buttons">
+        <a href="{{ url_for('text_to_speech') }}" class="nav-btn">
+            <h2>Преобразование текста в речь</h2>
+            <p>Преобразуйте текст в аудио файл</p>
+        </a>
+        <a href="{{ url_for('speech_to_text') }}" class="nav-btn">
+            <h2>Преобразование речи в текст</h2>
+            <p>Создайте конспект из аудио файла</p>
+        </a>
+    </div>
+</div>
+{% endblock %} 

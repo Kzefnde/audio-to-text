@@ -11,6 +11,20 @@
                 <h3>Исходный текст:</h3>
                 <p>{{ text }}</p>
             </div>
+            <!-- Добавляем блок с терминами -->
+            {% if terms %}
+            <div class="terms-block">
+                <h3>Найденные термины:</h3>
+                <div class="terms-list">
+                    {% for term in terms %}
+                    <div class="term-item">
+                        <span class="term-text">{{ term.term }}</span>
+                        <span class="term-score">Уверенность: {{ term.score }}</span>
+                    </div>
+                    {% endfor %}
+                </div>
+            </div>
+            {% endif %}
             <div class="audio-controls">
                 <button class="control-btn play-btn" onclick="playAudio('{{ result }}')">
                     <img src="{{ url_for('static', filename='image/play_arrow.svg') }}" alt="Play">
@@ -34,6 +48,20 @@
                 <h3>Распознанный текст:</h3>
                 <p>{{ result_text }}</p>
             </div>
+            <!-- Добавляем блок с терминами -->
+            {% if terms %}
+            <div class="terms-block">
+                <h3>Найденные термины:</h3>
+                <div class="terms-list">
+                    {% for term in terms %}
+                    <div class="term-item">
+                        <span class="term-text">{{ term.term }}</span>
+                        <span class="term-score">Уверенность: {{ term.score }}</span>
+                    </div>
+                    {% endfor %}
+                </div>
+            </div>
+            {% endif %}
             <div class="audio-controls">
                 <a href="{{ result_file }}" download class="control-btn download-btn">
                     <img src="{{ url_for('static', filename='image/download.svg') }}" alt="Download">

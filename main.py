@@ -1,91 +1,37 @@
 import os
 from typing import Tuple
-
+from datetime import datetime
+from werkzeug.utils import secure_filename
+from flask import Flask, render_template, request, jsonify
 import whisper
-from flask import Flask, render_template, request
-from gtts import gTTS
 
 app = Flask(__name__)
 
 model = whisper.load_model("medium")
 
-
 def save_files() -> str:
     """
-    Функция save_files() используется для сохранения аудиофайлов в указанной директории 'static/voice'.
-
-    :return: Возвращает путь к сохраненному аудиофайлу в формате строки.
+    Функция save_files() используется для сохранения аудиофайлов.
+    :return: Возвращает путь к сохраненному аудиофайлу.
     """
-
-    path = os.path.join('static/voice')
-
+    path = os.path.join('static/temp')
+    os.makedirs(path, exist_ok=True)
+    
     files_name = os.listdir(path)
-
     num = len(files_name)
-
-    if len(files_name) == 0:
-        new_name = 'voice.mp3'
-
-    else:
-        new_name = f'voice_{num}.mp3'
-
-    path_voice = os.path.join(f"static/voice/{new_name}")
-
-    return path_voice
-
-
-def rec_audio(text) -> str:
-    """
-    Функция rec_audio(text) используется для создания аудиофайла с заданным текстом и сохранения его в директории 'static/voice'.
-
-    :param text: Текст, который будет преобразован в аудиофайл.
-    :return: Возвращает путь к сохраненному аудиофайлу в формате строки.
-    """
-    path = save_files()
-
-    tts = gTTS(text, lang='ru')
-
-    tts.save(path)
-
-    return path
-
-
-def get_text(text) -> Tuple[str, str]:
-    """
-    Функция принимает текст и преобразует его в аудио. Если текст отсутствует (длина меньше 1),
-    выводится соответствующее сообщение. Возвращает путь к аудиофайлу и исходный текст.
-
-    :param text: Текст для преобразования в аудио.
-    :type text: str
-    :return: Кортеж с путем к аудиофайлу и исходным текстом.
-    :rtype: Tuple[str, str]
-    """
-    if len(text) < 1:
-        text = ('Вы не передали текст для преобразования! Пожалуйста вернитесь на главную страницу'
-                ' и передайте в окно текст')
-
-    path = rec_audio(text)
-
-    return path, text
-
+    new_name = f'audio_{num}.mp3'
+    
+    return os.path.join(path, new_name)
 
 def get_file(file) -> Tuple[str, str]:
     """
     Функция принимает загруженный файл и выполняет преобразование в текст.
-    Если файл не загружен (имя файла пустое), возвращается соответствующее сообщение и путь к аудиофайлу.
-
     :param file: Загруженный файл для преобразования в текст.
-    :type file: FileStorage
     :return: Кортеж с текстом и путем к файлу.
-    :rtype: Tuple[str, str]
     """
     if file.filename == '':
-        text = ('Вы не передали файл для преобразования! Пожалуйста вернитесь на главную страницу'
-                ' и передайте в окно файл')
-        path = rec_audio(text)
-        return text, path
+        return 'Файл не выбран', ''
 
-    # # Сохраняем загруженный файл на диск
     file_path = save_files()
     file.save(file_path)
 
@@ -94,35 +40,76 @@ def get_file(file) -> Tuple[str, str]:
 
     return text, file_path
 
-
-@app.route("/", methods=["POST", "GET"])
-@app.route("/home", methods=["POST", "GET"])
+@app.route("/", methods=["GET"])
 def index():
-    """
-    Обработчик маршрутов "/" и "/home" веб-приложения.
-    Отвечает за отображение формы для ввода текста либо загрузки файла и обработку этих данных
-    в соответствии с запросом пользователя.
-    :return:
-    """
-    if request.method == "POST":
-        if 'text' in request.form:
+    """Главная страница"""
+    return render_template("speech_to_text.html")
 
-            text = request.form['text']
+@app.route("/transcribe-stream", methods=["POST"])
+def transcribe_stream():
+    """Endpoint для преобразования речи в текст"""
+    if 'file' not in request.files:
+        return jsonify({'error': 'No file provided'}), 400
+    
+    file = request.files['file']
+    if file.filename == '':
+        return jsonify({'error': 'No file selected'}), 400
+    
+    # Сохраняем временный файл
+    temp_path = os.path.join('static/temp', secure_filename(file.filename))
+    os.makedirs(os.path.dirname(temp_path), exist_ok=True)
+    file.save(temp_path)
+    
+    try:
+        # Распознаем речь
+        result = model.transcribe(
+            temp_path,
+            language='ru',
+            fp16=False
+        )
+        
+        # Разбиваем на сегменты
+        text_segments = []
+        for segment in result['segments']:
+            if segment.get('text'):
+                text_segments.append(segment['text'].strip())
+        
+        full_text = ' '.join(text_segments)
+        
+        # Сохраняем в MD
+        md_path = save_markdown(full_text)
+        
+        return jsonify({
+            'text': full_text,
+            'segments': text_segments,
+            'md_file': md_path
+        })
+        
+    except Exception as e:
+        print(f"Error in transcription: {str(e)}")
+        return jsonify({'error': 'Failed to transcribe audio'}), 500
+    
+    finally:
+        # Очищаем временный файл
+        try:
+            if os.path.exists(temp_path):
+                os.remove(temp_path)
+        except Exception as e:
+            print(f"Error removing temp file: {str(e)}")
 
-            result, text = get_text(text)
-
-            return render_template("index_text_to_speach_result.html", result=result, text=text)
-        else:
-
-            file = request.files['file']
-
-            result_text, result_file = get_file(file)
-
-            return render_template("index_text_to_speach_result.html", result_text=result_text, result_file=result_file)
-
-    return render_template("index_text_to_speach.html")
-
+def save_markdown(text: str) -> str:
+    """Сохраняет текст в формате Markdown"""
+    timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+    filename = f"transcript_{timestamp}.md"
+    path = os.path.join('static', 'transcripts', filename)
+    
+    os.makedirs(os.path.dirname(path), exist_ok=True)
+    
+    with open(path, 'w', encoding='utf-8') as f:
+        f.write(f"# Транскрипция {timestamp}\n\n")
+        f.write(text)
+    
+    return f"/static/transcripts/{filename}"
 
 if __name__ == '__main__':
-    app.config["WTF_CSRF_ENABLED"] = False
     app.run(debug=True)
