@@ -40,13 +40,12 @@ html {
 }
 
 body {
+    margin: 0;
+    min-height: 100vh;
     display: flex;
     flex-direction: column;
-    min-width: 320px;
-    min-height: 100vh;
     font-family: 'Inter', sans-serif;
     background-color: var(--background-color);
-    color: var(--text-color);
 }
 
 /* glob */
@@ -83,17 +82,57 @@ body {
 
  .header {
    background-color: var(--primary-color);
-   padding: 1rem 0;
-   color: white;
+   color: var(--light-color);
+   padding: 1rem;
    text-align: center;
-   box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
  }
 
  .header h1 {
-   margin: 0;
-   font-size: 2rem;
-   font-weight: 600;
-   color: var(--light-color);
+    margin: 0;
+ }
+
+ .nav {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    max-width: 1200px;
+    margin: 0 auto;
+    padding: 1rem 2rem;
+ }
+
+ .nav-brand {
+    text-align: center;
+ }
+
+ .nav-brand h1 {
+    margin: 0;
+    font-size: 2rem;
+    font-weight: 600;
+    color: var(--light-color);
+ }
+
+ .nav-menu {
+    display: flex;
+    gap: 2rem;
+ }
+
+ .nav-link {
+    color: rgba(255, 255, 255, 0.8);
+    text-decoration: none;
+    font-weight: 500;
+    padding: 0.5rem 1rem;
+    border-radius: 6px;
+    transition: all 0.3s ease;
+ }
+
+ .nav-link:hover {
+    color: white;
+    background: rgba(255, 255, 255, 0.1);
+ }
+
+ .nav-link.active {
+    color: white;
+    background: var(--accent-color);
  }
 
  .header_container {
@@ -601,11 +640,11 @@ body {
 
 
 .footer {
-    width: 100%;
-    height: 70px;
+    background-color: var(--primary-color);
+    color: white;
+    text-align: center;
+    padding: 1rem;
     margin-top: auto;
-    box-shadow: 4px 4px 10px 0 rgba(0, 0, 0, 0.25);
-    background: #211b24;
 }
 
 /* Custom scrollbar */
@@ -744,9 +783,8 @@ body {
 }
 
 .block-title {
+    margin: 0 0 1.5rem 0;
     color: var(--primary-color);
-    margin-bottom: 1.5rem;
-    font-size: 1.5rem;
 }
 
 .converter-form {
@@ -766,10 +804,11 @@ body {
 }
 
 .file-upload-area {
-    position: relative;
-    min-height: 200px;
     border: 2px dashed var(--accent-color);
     border-radius: 8px;
+    padding: 2rem;
+    text-align: center;
+    cursor: pointer;
     transition: border-color 0.3s ease;
 }
 
@@ -938,25 +977,35 @@ body {
 }
 
 .nav-buttons {
-    display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
-    gap: 2rem;
-    margin-top: 2rem;
+    margin-bottom: 2rem;
 }
 
 .nav-btn {
+    display: block;
     background: white;
+    padding: 1.5rem;
     border-radius: 12px;
-    padding: 2rem;
     text-decoration: none;
     color: var(--text-color);
-    transition: transform 0.2s ease, box-shadow 0.2s ease;
     box-shadow: 0 4px 6px rgba(0, 0, 0, 0.05);
+    transition: transform 0.3s ease, box-shadow 0.3s ease;
 }
 
 .nav-btn:hover {
     transform: translateY(-2px);
-    box-shadow: 0 6px 12px rgba(0, 0, 0, 0.1);
+    box-shadow: 0 6px 8px rgba(0, 0, 0, 0.1);
+}
+
+.nav-btn h2 {
+    margin: 0 0 0.5rem 0;
+    color: var(--primary-color);
+    font-size: 1.5rem;
+}
+
+.nav-btn p {
+    margin: 0;
+    color: var(--text-color);
+    opacity: 0.8;
 }
 
 .progress-container {
@@ -1009,11 +1058,12 @@ body {
 }
 
 .split-layout {
+    margin-top: 2rem;
     display: grid;
-    grid-template-columns: 400px 1fr;
+    grid-template-columns: 1fr 1fr;
     gap: 2rem;
-    padding: 2rem;
-    min-height: calc(100vh - 200px);
+    max-width: 1200px;
+    margin: 0 auto;
 }
 
 .upload-column, .transcript-column {
@@ -1021,7 +1071,6 @@ body {
     border-radius: 12px;
     padding: 2rem;
     box-shadow: 0 4px 6px rgba(0, 0, 0, 0.05);
-    height: fit-content;
 }
 
 .file-upload-area {
@@ -1077,15 +1126,495 @@ body {
     background: var(--background-color);
     border-radius: 8px;
     padding: 1.5rem;
-    min-height: 300px;
-    max-height: 600px;
-    overflow-y: auto;
+    min-height: 200px;
 }
 
 /* Адаптивность для мобильных устройств */
-@media (max-width: 992px) {
+@media (max-width: 768px) {
     .split-layout {
         grid-template-columns: 1fr;
     }
+    
+    .nav-buttons {
+        margin-bottom: 1.5rem;
+    }
 }
+
+.lectures-container {
+    padding: 2rem;
+    max-width: 1200px;
+    margin: 0 auto;
+}
+
+.lectures-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 2rem;
+}
+
+.new-lecture-btn {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    padding: 0.8rem 1.5rem;
+    background-color: var(--accent-color);
+    color: white;
+    border-radius: 8px;
+    text-decoration: none;
+    font-weight: 500;
+    transition: background-color 0.3s ease;
+}
+
+.lectures-list {
+    display: grid;
+    gap: 1rem;
+}
+
+.lecture-card {
+    background: white;
+    border-radius: 12px;
+    padding: 1.5rem;
+    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.05);
+}
+
+.lecture-info h3 {
+    margin: 0 0 1rem 0;
+    color: var(--primary-color);
+}
+
+.lecture-preview {
+    color: var(--text-color);
+    margin: 0 0 1rem 0;
+    line-height: 1.5;
+}
+
+.lecture-actions {
+    display: flex;
+    gap: 1rem;
+}
+
+.action-btn {
+    padding: 0.5rem 1rem;
+    border-radius: 6px;
+    text-decoration: none;
+    font-weight: 500;
+    transition: all 0.3s ease;
+}
+
+.view-btn {
+    background-color: var(--background-color);
+    color: var(--text-color);
+}
+
+.edit-btn {
+    background-color: var(--accent-color);
+    color: white;
+}
+
+.download-btn {
+    background-color: var(--light-color);
+    color: var(--primary-color);
+}
+
+/* Стили для просмотра и редактирования */
+.lecture-view-container,
+.edit-container {
+    max-width: 800px;
+    margin: 0 auto;
+    padding: 2rem;
+}
+
+.lecture-header,
+.edit-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 2rem;
+}
+
+.lecture-content {
+    background: white;
+    padding: 2rem;
+    border-radius: 12px;
+    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.05);
+}
+
+.edit-textarea {
+    width: 100%;
+    min-height: 500px;
+    padding: 1rem;
+    border: 2px solid var(--accent-color);
+    border-radius: 8px;
+    font-size: 16px;
+    font-family: 'Inter', monospace;
+    resize: vertical;
+}
+
+.edit-actions {
+    margin-top: 1rem;
+    text-align: right;
+}
+
+.save-btn {
+    padding: 0.8rem 1.5rem;
+    background-color: var(--accent-color);
+    color: white;
+    border: none;
+    border-radius: 8px;
+    font-weight: 500;
+    cursor: pointer;
+    transition: background-color 0.3s ease;
+}
+
+/* Адаптивность */
+@media (max-width: 768px) {
+    .nav {
+        flex-direction: column;
+        gap: 1rem;
+    }
+    
+    .nav-menu {
+        width: 100%;
+        justify-content: center;
+    }
+}
+
+.app-container {
+    display: flex;
+    min-height: 100vh;
+}
+
+.sidebar {
+    width: 250px;
+    background-color: white;
+    border-right: 1px solid #e0e0e0;
+    padding: 2rem 0;
+}
+
+.logo {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+    padding: 0 2rem;
+    margin-bottom: 2rem;
+}
+
+.logo img {
+    width: 32px;
+    height: 32px;
+}
+
+.logo h1 {
+    font-size: 1.5rem;
+    color: var(--primary-color);
+    margin: 0;
+}
+
+.side-nav {
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+}
+
+.nav-item {
+    padding: 0.8rem 2rem;
+    color: var(--text-color);
+    text-decoration: none;
+    transition: all 0.3s ease;
+}
+
+.nav-item:hover {
+    background-color: var(--background-color);
+}
+
+.nav-item.active {
+    background-color: var(--background-color);
+    color: var(--accent-color);
+    font-weight: 500;
+}
+
+.main-content {
+    flex: 1;
+    padding: 2rem;
+    background-color: var(--background-color);
+}
+
+/* Обновим стили для лекций */
+.lectures-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 2rem;
+}
+
+.lectures-header h1 {
+    margin: 0;
+    font-size: 1.8rem;
+    color: var(--primary-color);
+}
+
+.delete-all-btn {
+    padding: 0.8rem 1.5rem;
+    background-color: #ff4444;
+    color: white;
+    border: none;
+    border-radius: 8px;
+    cursor: pointer;
+    transition: background-color 0.3s ease;
+}
+
+.delete-all-btn:hover {
+    background-color: #ff2020;
+}
+
+/* Адаптивность */
+@media (max-width: 768px) {
+    .app-container {
+        flex-direction: column;
+    }
+    
+    .sidebar {
+        width: 100%;
+        border-right: none;
+        border-bottom: 1px solid #e0e0e0;
+        padding: 1rem;
+    }
+    
+    .side-nav {
+        flex-direction: row;
+        overflow-x: auto;
+        padding-bottom: 0.5rem;
+    }
+    
+    .nav-item {
+        padding: 0.5rem 1rem;
+        white-space: nowrap;
+    }
+}
+
+/* Добавьте эти стили для анимации */
+@keyframes pulse {
+    0% { opacity: 0.6; }
+    50% { opacity: 1; }
+    100% { opacity: 0.6; }
+}
+
+.progress {
+    color: var(--accent-color);
+    text-align: center;
+    padding: 1rem;
+    animation: pulse 1.5s infinite;
+}
+
+.transcript-container {
+    background: var(--background-color);
+    border-radius: 8px;
+    padding: 1.5rem;
+    min-height: 200px;
+}
+
+/* Стили для кнопки скачивания */
+.download-btn {
+    background-color: var(--accent-color);
+    color: white;
+    border: none;
+    border-radius: 8px;
+    padding: 0.8rem 1.5rem;
+    cursor: pointer;
+    font-weight: 500;
+    transition: background-color 0.3s ease;
+    text-decoration: none;
+    display: inline-block;
+}
+
+.download-btn:hover {
+    background-color: var(--primary-color);
+}
+
+/* Добавьте эти стили для кнопок удаления */
+.delete-form {
+    display: inline-block;
+    margin: 0;
+}
+
+.delete-btn {
+    background-color: #ff4444;
+    color: white;
+    border: none;
+    border-radius: 8px;
+    padding: 0.8rem 1.5rem;
+    cursor: pointer;
+    font-weight: 500;
+    transition: background-color 0.3s ease;
+}
+
+.delete-btn:hover {
+    background-color: #ff2020;
+}
+
+.lecture-actions {
+    display: flex;
+    gap: 0.5rem;
+    align-items: center;
+}
+
+.action-btn {
+    padding: 0.5rem 1rem;
+    border-radius: 6px;
+    font-weight: 500;
+    text-decoration: none;
+    transition: all 0.3s ease;
+}
+
+.view-btn {
+    background-color: var(--accent-color);
+    color: white;
+}
+
+.edit-btn {
+    background-color: var(--secondary-color);
+    color: white;
+}
+
+.download-btn {
+    background-color: var(--primary-color);
+    color: white;
+}
+
+.action-btn:hover {
+    opacity: 0.9;
+}
+
+/* Добавьте эти стили для навигационных кнопок */
+.lecture-nav {
+    display: flex;
+    gap: 1rem;
+    margin-bottom: 2rem;
+}
+
+.nav-link {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    padding: 0.8rem 1.2rem;
+    border-radius: 8px;
+    font-weight: 500;
+    text-decoration: none;
+    transition: all 0.3s ease;
+}
+
+.back-link {
+    background-color: var(--background-color);
+    color: var(--text-color);
+    border: 1px solid var(--accent-color);
+}
+
+.back-link:hover {
+    background-color: var(--accent-color);
+    color: white;
+}
+
+.edit-link {
+    background-color: var(--accent-color);
+    color: white;
+}
+
+.edit-link:hover {
+    background-color: var(--primary-color);
+}
+
+.nav-link svg {
+    width: 20px;
+    height: 20px;
+}
+
+/* Стили для контейнера лекции */
+.lecture-view-container {
+    max-width: 1200px;
+    margin: 0 auto;
+    padding: 2rem;
+}
+
+.lecture-content {
+    background: white;
+    padding: 2rem;
+    border-radius: 12px;
+    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.05);
+}
+
+/* Адаптивность */
+@media (max-width: 768px) {
+    .lecture-nav {
+        flex-direction: column;
+    }
+    
+    .nav-link {
+        width: 100%;
+        justify-content: center;
+    }
+}
+
+/* Стили для формы редактирования */
+.edit-container {
+    max-width: 1200px;
+    margin: 0 auto;
+    padding: 2rem;
+}
+
+.edit-form {
+    background: white;
+    padding: 2rem;
+    border-radius: 12px;
+    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.05);
+}
+
+.edit-textarea {
+    width: 100%;
+    min-height: 500px;
+    padding: 1.5rem;
+    margin-bottom: 1.5rem;
+    border: 2px solid var(--accent-color);
+    border-radius: 8px;
+    font-size: 16px;
+    font-family: 'Inter', sans-serif;
+    line-height: 1.5;
+    resize: vertical;
+}
+
+.edit-textarea:focus {
+    outline: none;
+    border-color: var(--primary-color);
+}
+
+.edit-actions {
+    display: flex;
+    justify-content: flex-end;
+}
+
+.edit-actions .nav-link {
+    border: none;
+    cursor: pointer;
+}
+
+/* Анимация при наведении на текстовое поле */
+.edit-textarea:hover {
+    border-color: var(--primary-color);
+}
+
+/* Адаптивность для формы редактирования */
+@media (max-width: 768px) {
+    .edit-container {
+        padding: 1rem;
+    }
+    
+    .edit-form {
+        padding: 1rem;
+    }
+    
+    .edit-textarea {
+        min-height: 300px;
+    }
+}
+
 

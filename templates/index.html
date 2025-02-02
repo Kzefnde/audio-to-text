@@ -2,16 +2,119 @@
 
 {% block content %}
 <div class="nav-container">
-    <h1>Выберите режим работы</h1>
     <div class="nav-buttons">
-        <a href="{{ url_for('text_to_speech') }}" class="nav-btn">
-            <h2>Преобразование текста в речь</h2>
-            <p>Преобразуйте текст в аудио файл</p>
+        <a href="{{ url_for('lectures') }}" class="nav-btn">
+            <h2>Созданные лекции</h2>
+            <p>Просмотр и редактирование конспектов</p>
         </a>
-        <a href="{{ url_for('speech_to_text') }}" class="nav-btn">
-            <h2>Преобразование речи в текст</h2>
-            <p>Создайте конспект из аудио файла</p>
+        <a href="{{ url_for('index') }}" class="nav-btn active">
+            <h2>Создать новую лекцию</h2>
+            <p>Преобразование речи в текст</p>
         </a>
     </div>
 </div>
+
+<div class="converter-container split-layout">
+    <!-- Левая колонка с загрузкой -->
+    <div class="upload-column">
+        <h2 class="block-title">Загрузка аудио</h2>
+        <form id="upload-form" class="converter-form">
+            <div class="file-upload-area" id="drop-zone">
+                <input type="file" name="file" id="file-input" class="file-input" accept="audio/*" required>
+                <label for="file-input" class="file-label">
+                    <img src="{{ url_for('static', filename='image/upload.svg') }}" alt="Upload" class="upload-icon">
+                    <span class="upload-text">Перетащите аудиофайл или нажмите для выбора</span>
+                </label>
+            </div>
+            <div id="file-info" class="file-info" style="display: none;">
+                <span class="file-name"></span>
+                <button type="button" class="clear-file">×</button>
+            </div>
+            <div id="transcription-progress" class="progress-container" style="display: none;">
+                <div class="progress-bar"></div>
+                <p class="progress-text">Идет распознавание...</p>
+            </div>
+        </form>
+    </div>
+
+    <!-- Правая колонка с результатом -->
+    <div class="transcript-column">
+        <h2 class="block-title">Конспект</h2>
+        <div id="live-transcript" class="transcript-container"></div>
+    </div>
+</div>
+
+<script>
+const form = document.getElementById('upload-form');
+const fileInput = document.getElementById('file-input');
+const progressContainer = document.getElementById('transcription-progress');
+const liveTranscript = document.getElementById('live-transcript');
+const fileInfo = document.getElementById('file-info');
+const fileName = fileInfo.querySelector('.file-name');
+const clearButton = fileInfo.querySelector('.clear-file');
+
+fileInput.addEventListener('change', handleFileSelect);
+clearButton.addEventListener('click', clearFile);
+
+function handleFileSelect(e) {
+    if (!fileInput.files.length) return;
+    
+    const file = fileInput.files[0];
+    fileName.textContent = file.name;
+    fileInfo.style.display = 'flex';
+    
+    uploadAndTranscribe(file);
+}
+
+function clearFile() {
+    fileInput.value = '';
+    fileInfo.style.display = 'none';
+    liveTranscript.innerHTML = '';
+}
+
+async function uploadAndTranscribe(file) {
+    const formData = new FormData();
+    formData.append('file', file);
+    
+    progressContainer.style.display = 'block';
+    liveTranscript.innerHTML = '';
+    
+    try {
+        const response = await fetch('/transcribe-stream', {
+            method: 'POST',
+            body: formData
+        });
+        
+        const result = await response.json();
+        
+        if (result.segments) {
+            result.segments.forEach(segment => {
+                const p = document.createElement('p');
+                p.textContent = segment;
+                liveTranscript.appendChild(p);
+            });
+        }
+        
+        if (result.md_file) {
+            const container = document.createElement('div');
+            container.className = 'download-container';
+            
+            const link = document.createElement('a');
+            link.href = result.md_file;
+            link.className = 'download-btn';
+            link.setAttribute('download', '');
+            link.textContent = 'Скачать конспект (MD)';
+            
+            container.appendChild(link);
+            liveTranscript.appendChild(container);
+        }
+        
+    } catch (error) {
+        console.error('Error:', error);
+        liveTranscript.innerHTML = '<p class="error">Произошла ошибка при распознавании</p>';
+    } finally {
+        progressContainer.style.display = 'none';
+    }
+}
+</script>
 {% endblock %} 

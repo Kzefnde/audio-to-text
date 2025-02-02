@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>EchoNotes - Преобразование речи в текст</title>
+    <title>EchoNotes</title>
     
     <!-- Шрифты -->
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
@@ -15,22 +15,30 @@
 </head>
 <body>
     <header class="header">
-        <div class="header_container">
-            <h1>EchoNotes</h1>
-            <p class="header_descr">Преобразование речи в текст</p>
-        </div>
+        <h1>EchoNotes</h1>
     </header>
 
-    <main class="main">
-        <div class="main_container">
+    <div class="app-container">
+        <!-- Боковое меню -->
+        <aside class="sidebar">
+            <nav class="side-nav">
+                <a href="{{ url_for('index') }}" class="nav-item {% if request.endpoint == 'index' %}active{% endif %}">
+                    Ввод лекций
+                </a>
+                <a href="{{ url_for('lectures') }}" class="nav-item {% if request.endpoint == 'lectures' %}active{% endif %}">
+                    База лекций
+                </a>
+            </nav>
+        </aside>
+
+        <!-- Основной контент -->
+        <main class="main-content">
             {% block content %}{% endblock %}
-        </div>
-    </main>
+        </main>
+    </div>
 
     <footer class="footer">
-        <div class="container">
-            <p class="footer_text">© 2025 Text & Speech Converter</p>
-        </div>
+        <p>© 2025 Text & Speech Converter</p>
     </footer>
 
     <!-- Подключаем скрипты -->

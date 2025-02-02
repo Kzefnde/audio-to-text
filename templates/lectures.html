@@ -1,0 +1,41 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="lectures-container">
+    <div class="lectures-header">
+        <h1>База лекций</h1>
+        <form action="{{ url_for('delete_all_lectures') }}" method="POST" class="delete-all-form" onsubmit="return confirm('Вы уверены, что хотите удалить все лекции?');">
+            <button type="submit" class="delete-all-btn">Удалить все лекции</button>
+        </form>
+    </div>
+    
+    <div class="lectures-list">
+        {% if lectures %}
+            {% for lecture in lectures %}
+            <div class="lecture-card">
+                <div class="lecture-info">
+                    <h3>Лекция от {{ lecture.date }}</h3>
+                    <p class="lecture-preview">{{ lecture.content[:200] }}...</p>
+                </div>
+                <div class="lecture-actions">
+                    <a href="{{ url_for('view_lecture', lecture_id=lecture.id) }}" class="action-btn view-btn">
+                        Просмотр
+                    </a>
+                    <a href="{{ url_for('edit_lecture', lecture_id=lecture.id) }}" class="action-btn edit-btn">
+                        Редактировать
+                    </a>
+                    <a href="{{ lecture.path }}" download class="action-btn download-btn">
+                        Скачать MD
+                    </a>
+                    <form action="{{ url_for('delete_lecture', lecture_id=lecture.id) }}" method="POST" class="delete-form" onsubmit="return confirm('Удалить эту лекцию?');">
+                        <button type="submit" class="action-btn delete-btn">Удалить</button>
+                    </form>
+                </div>
+            </div>
+            {% endfor %}
+        {% else %}
+            <p class="no-lectures">У вас пока нет сохраненных лекций</p>
+        {% endif %}
+    </div>
+</div>
+{% endblock %} 
