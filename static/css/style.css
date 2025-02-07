@@ -1617,4 +1617,33 @@ body {
     }
 }
 
+.terms-container {
+    margin-top: 2rem;
+    background: white;
+    border-radius: 12px;
+    padding: 1.5rem;
+    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.05);
+}
+
+.terms-container h3 {
+    margin: 0 0 1rem 0;
+    color: var(--primary-color);
+}
+
+.terms-list {
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+}
+
+.term-item {
+    padding: 0.5rem;
+    border-radius: 6px;
+    background: var(--background-color);
+}
+
+.term-item strong {
+    color: var(--accent-color);
+}
+
 

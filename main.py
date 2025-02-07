@@ -4,6 +4,7 @@ from datetime import datetime
 from werkzeug.utils import secure_filename
 from flask import Flask, render_template, request, jsonify, redirect, url_for
 import whisper
+from utils.text_processor import TextProcessor
 
 app = Flask(__name__)
 
@@ -12,6 +13,9 @@ app.config['UPLOAD_FOLDER'] = os.path.join('static', 'temp')
 os.makedirs(app.config['UPLOAD_FOLDER'], exist_ok=True)
 
 model = whisper.load_model("medium")
+
+# Инициализируем обработчик текста
+text_processor = TextProcessor()
 
 def save_files() -> str:
     """
@@ -59,11 +63,9 @@ def transcribe_stream():
         return jsonify({'error': 'No file selected'}), 400
     
     if file:
-        # Создаем имя файла с текущей датой и временем
         timestamp = datetime.now().strftime('%Y%m%d%H%M%S')
         filename = f"transcript_{timestamp}.md"
         
-        # Сохраняем аудиофайл временно
         audio_path = os.path.join(app.config['UPLOAD_FOLDER'], secure_filename(file.filename))
         file.save(audio_path)
         
@@ -71,21 +73,24 @@ def transcribe_stream():
             # Транскрибация
             result = model.transcribe(audio_path, language='ru')
             
+            # Форматируем текст и извлекаем термины
+            formatted_text = text_processor.format_transcript(result["text"])
+            terms = text_processor.extract_terms(result["text"])
+            
             # Сохраняем результат в MD файл
             md_path = os.path.join('static', 'transcripts', filename)
             os.makedirs(os.path.dirname(md_path), exist_ok=True)
             
             with open(md_path, 'w', encoding='utf-8') as f:
-                f.write(f"# Транскрипция от {datetime.now().strftime('%d.%m.%Y %H:%M')}\n\n")
-                f.write(result["text"])
+                f.write(formatted_text)
             
-            # Удаляем временный аудиофайл
             if os.path.exists(audio_path):
                 os.remove(audio_path)
             
             return jsonify({
                 'segments': [result["text"]],
-                'md_file': f'/static/transcripts/{filename}'
+                'md_file': f'/static/transcripts/{filename}',
+                'terms': terms
             })
             
         except Exception as e:

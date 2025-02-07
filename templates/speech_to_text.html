@@ -32,6 +32,10 @@
         <div id="download-container" class="download-container" style="display: none;">
             <button class="download-btn">Скачать конспект (MD)</button>
         </div>
+        <div class="terms-container" style="display: none;">
+            <h3>Найденные термины и определения</h3>
+            <div class="terms-list"></div>
+        </div>
     </div>
 </div>
 
@@ -122,8 +126,32 @@ async function uploadAndTranscribe(file) {
             });
         }
         
+        // Отображаем термины
+        if (result.terms && result.terms.length > 0) {
+            const termsContainer = document.querySelector('.terms-container');
+            const termsList = termsContainer.querySelector('.terms-list');
+            
+            termsList.innerHTML = '';
+            result.terms.forEach(term => {
+                const termItem = document.createElement('div');
+                termItem.className = 'term-item';
+                
+                if (term.type === 'formula') {
+                    termItem.innerHTML = `<strong>Формула:</strong> ${term.term}`;
+                } else {
+                    termItem.innerHTML = `<strong>${term.term}</strong>`;
+                    if (term.definition) {
+                        termItem.innerHTML += ` - ${term.definition}`;
+                    }
+                }
+                
+                termsList.appendChild(termItem);
+            });
+            
+            termsContainer.style.display = 'block';
+        }
+        
         if (result.md_file) {
-            // Показываем кнопку для скачивания
             downloadContainer.style.display = 'block';
             const downloadBtn = downloadContainer.querySelector('.download-btn');
             downloadBtn.onclick = () => {
