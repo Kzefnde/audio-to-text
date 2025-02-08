@@ -5,6 +5,7 @@ from werkzeug.utils import secure_filename
 from flask import Flask, render_template, request, jsonify, redirect, url_for
 import whisper
 from utils.text_processor import TextProcessor
+import time
 
 app = Flask(__name__)
 
@@ -55,48 +56,58 @@ def index():
 
 @app.route("/transcribe-stream", methods=['POST'])
 def transcribe_stream():
-    if 'file' not in request.files:
+    if 'file' not in request.files and request.content_type != 'audio/wav':
         return jsonify({'error': 'No file provided'}), 400
     
-    file = request.files['file']
-    if file.filename == '':
-        return jsonify({'error': 'No file selected'}), 400
-    
-    if file:
+    try:
+        if request.content_type == 'audio/wav':
+            # Обработка аудио из записи микрофона
+            audio_data = request.get_data()
+            temp_path = os.path.join(app.config['UPLOAD_FOLDER'], f'temp_{int(time.time())}.wav')
+            
+            with open(temp_path, 'wb') as f:
+                f.write(audio_data)
+            
+            audio_path = temp_path
+        else:
+            # Обработка загруженного файла
+            file = request.files['file']
+            if file.filename == '':
+                return jsonify({'error': 'No file selected'}), 400
+                
+            audio_path = os.path.join(app.config['UPLOAD_FOLDER'], secure_filename(file.filename))
+            file.save(audio_path)
+        
+        # Транскрибация
+        result = model.transcribe(audio_path, language='ru')
+        
+        # Форматируем текст и извлекаем термины
+        formatted_text = text_processor.format_transcript(result["text"])
+        terms = text_processor.extract_terms(result["text"])
+        
+        # Сохраняем результат в MD файл
         timestamp = datetime.now().strftime('%Y%m%d%H%M%S')
         filename = f"transcript_{timestamp}.md"
+        md_path = os.path.join('static', 'transcripts', filename)
+        os.makedirs(os.path.dirname(md_path), exist_ok=True)
         
-        audio_path = os.path.join(app.config['UPLOAD_FOLDER'], secure_filename(file.filename))
-        file.save(audio_path)
+        with open(md_path, 'w', encoding='utf-8') as f:
+            f.write(formatted_text)
         
-        try:
-            # Транскрибация
-            result = model.transcribe(audio_path, language='ru')
-            
-            # Форматируем текст и извлекаем термины
-            formatted_text = text_processor.format_transcript(result["text"])
-            terms = text_processor.extract_terms(result["text"])
-            
-            # Сохраняем результат в MD файл
-            md_path = os.path.join('static', 'transcripts', filename)
-            os.makedirs(os.path.dirname(md_path), exist_ok=True)
-            
-            with open(md_path, 'w', encoding='utf-8') as f:
-                f.write(formatted_text)
-            
-            if os.path.exists(audio_path):
-                os.remove(audio_path)
-            
-            return jsonify({
-                'segments': [result["text"]],
-                'md_file': f'/static/transcripts/{filename}',
-                'terms': terms
-            })
-            
-        except Exception as e:
-            if os.path.exists(audio_path):
-                os.remove(audio_path)
-            return jsonify({'error': str(e)}), 500
+        # Удаляем временный файл
+        if os.path.exists(audio_path):
+            os.remove(audio_path)
+        
+        return jsonify({
+            'segments': [result["text"]],
+            'md_file': f'/static/transcripts/{filename}',
+            'terms': terms
+        })
+        
+    except Exception as e:
+        if os.path.exists(audio_path):
+            os.remove(audio_path)
+        return jsonify({'error': str(e)}), 500
 
 def save_markdown(text: str) -> str:
     """Сохраняет текст в формате Markdown"""

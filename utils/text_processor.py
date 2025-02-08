@@ -6,11 +6,26 @@ class TextProcessor:
         # Паттерны для поиска терминов и определений
         self.term_patterns = [
             r'«([^»]+)»',  # Текст в кавычках
-            r'\b[А-Я][а-я]+(?:\s+[А-Я][а-я]+)*\b',  # Слова с заглавной буквы
-            r'\b[A-Z][a-z]+(?:\s+[A-Z][a-z]+)*\b',  # Английские слова с заглавной буквы
+            r'"([^"]+)"',  # Текст в двойных кавычках
+            r'\b(?:[А-Я][а-я]+\s*){1,3}\b(?=\s*[-—]|\s*\(|\s*—\s*это)',  # Термины перед определением
+            r'\b(?:[A-Z][a-z]+\s*){1,3}\b(?=\s*[-—]|\s*\(|\s*—\s*это)',  # Английские термины
         ]
-        self.definition_pattern = r'[-—]\s*([^-—]+?)(?=[-—]|$)|\(([^)]+)\)'
+        self.definition_patterns = [
+            r'[-—]\s*([^-—.!?]+?)(?=[-—]|$|\.|!|\?)',  # Определение после тире
+            r'\(([^)]+)\)',  # Определение в скобках
+            r'—\s*это\s+([^.!?]+)',  # Определение после "это"
+        ]
         self.formula_pattern = r'\$(.+?)\$'
+        
+        # Список игнорируемых слов
+        self.common_words = {
+            'Это', 'Также', 'Таким', 'Образом', 'Например', 'Далее',
+            'Затем', 'Потом', 'Сначала', 'Поэтому', 'Однако', 'Итак',
+            'The', 'This', 'That', 'These', 'Those', 'Then', 'Therefore',
+            'При', 'Для', 'После', 'Перед', 'Когда', 'Если', 'Чтобы',
+            'Здесь', 'Там', 'Где', 'Как', 'Какой', 'Который', 'Почему',
+            'Каждый', 'Любой', 'Весь', 'Все', 'Многие', 'Некоторые'
+        }
         
     def extract_terms(self, text):
         """Извлекает термины и определения из текста"""
@@ -20,24 +35,33 @@ class TextProcessor:
         sentences = re.split('[.!?]', text)
         
         for sentence in sentences:
+            if not sentence.strip():
+                continue
+                
             # Ищем определения
-            definitions = re.findall(self.definition_pattern, sentence)
+            definitions = []
+            for pattern in self.definition_patterns:
+                found_defs = re.findall(pattern, sentence)
+                definitions.extend([d.strip() for d in found_defs if d.strip()])
             
-            # Ищем термины по всем паттернам
+            # Ищем термины
             for pattern in self.term_patterns:
                 potential_terms = re.findall(pattern, sentence)
                 
                 for term in potential_terms:
                     if isinstance(term, tuple):
                         term = term[0]
-                    if term and len(term) > 2:  # Игнорируем короткие термины
-                        # Проверяем, не является ли термин служебным словом
-                        if not self._is_common_word(term):
-                            terms.append({
-                                'term': term.strip(),
-                                'definition': self._find_definition(term, definitions),
-                                'type': 'term'
-                            })
+                    term = term.strip()
+                    
+                    if self._is_valid_term(term):
+                        # Ищем определение для термина
+                        definition = self._find_best_definition(term, definitions, sentence)
+                        
+                        terms.append({
+                            'term': term,
+                            'definition': definition,
+                            'type': 'term'
+                        })
             
             # Ищем формулы
             formulas = re.findall(self.formula_pattern, sentence)
@@ -48,33 +72,57 @@ class TextProcessor:
                 })
         
         # Удаляем дубликаты, сохраняя порядок
-        unique_terms = []
-        seen = set()
-        for term in terms:
-            term_key = (term['term'], term.get('definition'))
-            if term_key not in seen:
-                seen.add(term_key)
-                unique_terms.append(term)
+        return self._remove_duplicates(terms)
+    
+    def _is_valid_term(self, term):
+        """Проверяет, является ли строка допустимым термином"""
+        if not term or len(term) < 3:
+            return False
+            
+        # Проверяем, не является ли термин служебным словом
+        if term in self.common_words:
+            return False
+            
+        # Проверяем, не состоит ли термин только из цифр
+        if term.replace('.', '').replace(',', '').isdigit():
+            return False
+            
+        return True
+    
+    def _find_best_definition(self, term, definitions, sentence):
+        """Находит наиболее подходящее определение для термина"""
+        best_definition = None
         
-        return unique_terms
-    
-    def _find_definition(self, term, definitions):
-        """Ищет определение для термина"""
+        # Сначала ищем определение в списке найденных определений
         for definition in definitions:
-            if isinstance(definition, tuple):
-                definition = ' '.join(d for d in definition if d)
-            if definition and term.lower() in definition.lower():
+            if term.lower() in definition.lower():
                 return definition.strip()
-        return None
+        
+        # Если не нашли, ищем определение после термина в предложении
+        term_pos = sentence.find(term)
+        if term_pos != -1:
+            after_term = sentence[term_pos + len(term):].strip()
+            for pattern in self.definition_patterns:
+                match = re.search(pattern, after_term)
+                if match:
+                    return match.group(1).strip()
+        
+        return best_definition
     
-    def _is_common_word(self, term):
-        """Проверяет, является ли слово служебным"""
-        common_words = {
-            'Это', 'Также', 'Таким', 'Образом', 'Например', 'Далее',
-            'Затем', 'Потом', 'Сначала', 'Поэтому', 'Однако',
-            'The', 'This', 'That', 'These', 'Those', 'Then'
-        }
-        return term.strip() in common_words 
+    def _remove_duplicates(self, terms):
+        """Удаляет дубликаты терминов, сохраняя лучшие определения"""
+        unique_terms = {}
+        
+        for term in terms:
+            term_key = term['term'].lower()
+            
+            if term_key not in unique_terms:
+                unique_terms[term_key] = term
+            elif term.get('definition') and not unique_terms[term_key].get('definition'):
+                # Заменяем существующий термин, если у нового есть определение
+                unique_terms[term_key] = term
+        
+        return list(unique_terms.values())
 
     def format_transcript(self, text, title=None):
         """Форматирует текст конспекта в красивый Markdown"""

@@ -1646,4 +1646,92 @@ body {
     color: var(--accent-color);
 }
 
+/* Стили для режимов записи */
+.mode-switch {
+    display: flex;
+    gap: 1rem;
+    margin-bottom: 1.5rem;
+}
+
+.mode-btn {
+    flex: 1;
+    padding: 0.8rem 1.2rem;
+    border: 2px solid var(--accent-color);
+    border-radius: 8px;
+    background: white;
+    color: var(--accent-color);
+    cursor: pointer;
+    transition: all 0.3s ease;
+}
+
+.mode-btn.active {
+    background: var(--accent-color);
+    color: white;
+}
+
+/* Стили для записи */
+.record-controls {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 1rem;
+}
+
+.record-btn {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    padding: 1rem 2rem;
+    border: none;
+    border-radius: 8px;
+    background: var(--accent-color);
+    color: white;
+    cursor: pointer;
+    transition: all 0.3s ease;
+}
+
+.record-btn:hover {
+    background: var(--primary-color);
+}
+
+.record-icon {
+    width: 12px;
+    height: 12px;
+    border-radius: 50%;
+    background: #ff4444;
+}
+
+.stop-icon {
+    width: 12px;
+    height: 12px;
+    background: #ff4444;
+}
+
+.recording-time {
+    font-size: 1.5rem;
+    font-weight: 500;
+    color: var(--accent-color);
+}
+
+.recording-status {
+    text-align: center;
+    margin-top: 1rem;
+    color: var(--text-color);
+}
+
+.recording-indicator {
+    display: inline-block;
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    background: #ff4444;
+    animation: pulse 1s infinite;
+}
+
+@keyframes pulse {
+    0% { opacity: 1; }
+    50% { opacity: 0.5; }
+    100% { opacity: 1; }
+}
+
 

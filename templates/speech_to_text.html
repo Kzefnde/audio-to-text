@@ -10,20 +10,46 @@
 
 <div class="split-layout">
     <div class="upload-column">
-        <h2 class="block-title">Загрузка аудио</h2>
-        <form id="upload-form">
-            <div class="file-upload-area" id="drop-zone">
-                <input type="file" id="file-input" class="file-input" accept="audio/*">
-                <label for="file-input">
-                    <img src="{{ url_for('static', filename='image/upload.svg') }}" alt="Upload" class="upload-icon">
-                    <p class="upload-text">Перетащите аудиофайл или нажмите для выбора</p>
-                </label>
+        <h2 class="block-title">Запись аудио</h2>
+        
+        <!-- Переключатель режимов -->
+        <div class="mode-switch">
+            <button class="mode-btn active" data-mode="upload">Загрузка файла</button>
+            <button class="mode-btn" data-mode="record">Запись аудио</button>
+        </div>
+
+        <!-- Блок загрузки файла -->
+        <div id="upload-mode" class="mode-block">
+            <form id="upload-form">
+                <div class="file-upload-area" id="drop-zone">
+                    <input type="file" id="file-input" class="file-input" accept="audio/*">
+                    <label for="file-input">
+                        <img src="{{ url_for('static', filename='image/upload.svg') }}" alt="Upload" class="upload-icon">
+                        <p class="upload-text">Перетащите аудиофайл или нажмите для выбора</p>
+                    </label>
+                </div>
+                <div id="file-info" class="file-info" style="display: none;">
+                    <span class="file-name"></span>
+                    <button type="button" class="clear-file">×</button>
+                </div>
+            </form>
+        </div>
+
+        <!-- Блок записи аудио -->
+        <div id="record-mode" class="mode-block" style="display: none;">
+            <div class="record-controls">
+                <button id="startRecord" class="record-btn">
+                    <span class="record-icon"></span>
+                    Начать запись
+                </button>
+                <button id="stopRecord" class="record-btn" style="display: none;">
+                    <span class="stop-icon"></span>
+                    Остановить запись
+                </button>
+                <div id="recordingTime" class="recording-time" style="display: none;">00:00</div>
             </div>
-            <div id="file-info" class="file-info" style="display: none;">
-                <span class="file-name"></span>
-                <button type="button" class="clear-file">×</button>
-            </div>
-        </form>
+            <div id="recordingStatus" class="recording-status"></div>
+        </div>
     </div>
 
     <div class="transcript-column">
@@ -163,6 +189,86 @@ async function uploadAndTranscribe(file) {
         console.error('Error:', error);
         liveTranscript.innerHTML = '<p class="error">Произошла ошибка при распознавании</p>';
     }
+}
+
+// Добавляем код для записи аудио
+let mediaRecorder;
+let audioChunks = [];
+let recordingTimer;
+let startTime;
+
+const startRecordBtn = document.getElementById('startRecord');
+const stopRecordBtn = document.getElementById('stopRecord');
+const recordingTime = document.getElementById('recordingTime');
+const recordingStatus = document.getElementById('recordingStatus');
+
+// Переключение режимов
+document.querySelectorAll('.mode-btn').forEach(btn => {
+    btn.addEventListener('click', () => {
+        const mode = btn.dataset.mode;
+        document.querySelectorAll('.mode-btn').forEach(b => b.classList.remove('active'));
+        btn.classList.add('active');
+        
+        if (mode === 'upload') {
+            document.getElementById('upload-mode').style.display = 'block';
+            document.getElementById('record-mode').style.display = 'none';
+        } else {
+            document.getElementById('upload-mode').style.display = 'none';
+            document.getElementById('record-mode').style.display = 'block';
+        }
+    });
+});
+
+// Запись аудио
+startRecordBtn.addEventListener('click', async () => {
+    try {
+        const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+        mediaRecorder = new MediaRecorder(stream);
+        audioChunks = [];
+        
+        mediaRecorder.ondataavailable = (event) => {
+            audioChunks.push(event.data);
+        };
+        
+        mediaRecorder.onstop = async () => {
+            const audioBlob = new Blob(audioChunks, { type: 'audio/wav' });
+            await uploadAndTranscribe(audioBlob);
+        };
+        
+        mediaRecorder.start(1000); // Записываем чанками по 1 секунде
+        startTime = Date.now();
+        updateRecordingTime();
+        
+        startRecordBtn.style.display = 'none';
+        stopRecordBtn.style.display = 'block';
+        recordingTime.style.display = 'block';
+        recordingStatus.innerHTML = '<span class="recording-indicator"></span> Идет запись...';
+        
+    } catch (error) {
+        console.error('Error accessing microphone:', error);
+        recordingStatus.textContent = 'Ошибка доступа к микрофону';
+    }
+});
+
+stopRecordBtn.addEventListener('click', () => {
+    if (mediaRecorder && mediaRecorder.state === 'recording') {
+        mediaRecorder.stop();
+        clearInterval(recordingTimer);
+        
+        startRecordBtn.style.display = 'block';
+        stopRecordBtn.style.display = 'none';
+        recordingTime.style.display = 'none';
+        recordingStatus.textContent = 'Запись завершена';
+    }
+});
+
+function updateRecordingTime() {
+    recordingTimer = setInterval(() => {
+        const duration = Math.floor((Date.now() - startTime) / 1000);
+        const minutes = Math.floor(duration / 60).toString().padStart(2, '0');
+        const seconds = (duration % 60).toString().padStart(2, '0');
+        recordingTime.textContent = `${minutes}:${seconds}`;
+    }, 1000);
 }
 </script>
 {% endblock %} 
