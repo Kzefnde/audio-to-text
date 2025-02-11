@@ -6,42 +6,63 @@
     <title>EchoNotes</title>
     
     <!-- Шрифты -->
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
     
     <!-- Стили -->
     <link rel="stylesheet" href="{{ url_for('static', filename='css/normalize.css') }}">
-    <link rel="stylesheet" href="{{ url_for('static', filename='css/animations.css') }}">
     <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+    
+    <!-- CSRF-токен -->
+    <meta name="csrf-token" content="{{ csrf_token() }}">
 </head>
 <body>
-    <header class="header">
-        <h1>EchoNotes</h1>
-    </header>
+    <div class="app-wrapper">
+        <header class="header">
+            <div class="header-container">
+                <a href="{{ url_for('dashboard') }}" class="brand">EchoNotes</a>
+                <nav class="nav-menu">
+                    {% if current_user.is_authenticated %}
+                        <a href="{{ url_for('dashboard') }}" class="nav-link {% if request.endpoint == 'dashboard' %}active{% endif %}">
+                            Главная
+                        </a>
+                        <a href="{{ url_for('new_lecture') }}" class="nav-link {% if request.endpoint == 'new_lecture' %}active{% endif %}">
+                            Новая лекция
+                        </a>
+                        <a href="{{ url_for('lectures') }}" class="nav-link {% if request.endpoint == 'lectures' %}active{% endif %}">
+                            Мои лекции
+                        </a>
+                        <a href="{{ url_for('logout') }}" class="nav-link">Выйти</a>
+                    {% else %}
+                        <a href="{{ url_for('login') }}" class="nav-link {% if request.endpoint == 'login' %}active{% endif %}">
+                            Войти
+                        </a>
+                        <a href="{{ url_for('register') }}" class="nav-link {% if request.endpoint == 'register' %}active{% endif %}">
+                            Регистрация
+                        </a>
+                    {% endif %}
+                </nav>
+            </div>
+        </header>
 
-    <div class="app-container">
-        <!-- Боковое меню -->
-        <aside class="sidebar">
-            <nav class="side-nav">
-                <a href="{{ url_for('index') }}" class="nav-item {% if request.endpoint == 'index' %}active{% endif %}">
-                    Ввод лекций
-                </a>
-                <a href="{{ url_for('lectures') }}" class="nav-item {% if request.endpoint == 'lectures' %}active{% endif %}">
-                    База лекций
-                </a>
-            </nav>
-        </aside>
-
-        <!-- Основной контент -->
         <main class="main-content">
+            {% with messages = get_flashed_messages(with_categories=true) %}
+                {% if messages %}
+                    {% for category, message in messages %}
+                        <div class="alert alert-{{ category }} fade-in">
+                            {{ message }}
+                        </div>
+                    {% endfor %}
+                {% endif %}
+            {% endwith %}
+            
             {% block content %}{% endblock %}
         </main>
+
+        <footer class="footer">
+            <div class="footer-content">
+                <p>&copy; 2025 EchoNotes. Все права защищены.</p>
+            </div>
+        </footer>
     </div>
-
-    <footer class="footer">
-        <p>© 2025 Text & Speech Converter</p>
-    </footer>
-
-    <!-- Подключаем скрипты -->
-    <script src="{{ url_for('static', filename='css/script.js') }}"></script>
 </body>
 </html>

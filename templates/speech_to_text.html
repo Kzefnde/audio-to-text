@@ -1,274 +1,420 @@
 {% extends "base.html" %}
 
 {% block content %}
-<div class="nav-buttons">
-    <a href="{{ url_for('lectures') }}" class="nav-btn">
-        <h2>Созданные лекции</h2>
-        <p>Просмотр и редактирование конспектов</p>
-    </a>
-</div>
-
-<div class="split-layout">
-    <div class="upload-column">
-        <h2 class="block-title">Запись аудио</h2>
+<div class="upload-container">
+    <div class="card mb-4">
+        <h1 class="text-center mb-4">Создание новой лекции</h1>
         
         <!-- Переключатель режимов -->
-        <div class="mode-switch">
-            <button class="mode-btn active" data-mode="upload">Загрузка файла</button>
-            <button class="mode-btn" data-mode="record">Запись аудио</button>
+        <div class="mode-switch mb-4">
+            <button class="btn btn-mode active" data-mode="upload">Загрузка файла</button>
+            <button class="btn btn-mode" data-mode="record">Запись аудио</button>
         </div>
-
-        <!-- Блок загрузки файла -->
-        <div id="upload-mode" class="mode-block">
-            <form id="upload-form">
-                <div class="file-upload-area" id="drop-zone">
-                    <input type="file" id="file-input" class="file-input" accept="audio/*">
-                    <label for="file-input">
-                        <img src="{{ url_for('static', filename='image/upload.svg') }}" alt="Upload" class="upload-icon">
-                        <p class="upload-text">Перетащите аудиофайл или нажмите для выбора</p>
-                    </label>
-                </div>
-                <div id="file-info" class="file-info" style="display: none;">
-                    <span class="file-name"></span>
-                    <button type="button" class="clear-file">×</button>
-                </div>
-            </form>
-        </div>
-
-        <!-- Блок записи аудио -->
-        <div id="record-mode" class="mode-block" style="display: none;">
-            <div class="record-controls">
-                <button id="startRecord" class="record-btn">
-                    <span class="record-icon"></span>
-                    Начать запись
-                </button>
-                <button id="stopRecord" class="record-btn" style="display: none;">
-                    <span class="stop-icon"></span>
-                    Остановить запись
-                </button>
-                <div id="recordingTime" class="recording-time" style="display: none;">00:00</div>
+        
+        <!-- Режим загрузки файла -->
+        <div id="upload-mode" class="mode-content">
+            <div class="upload-area" id="drop-zone">
+                <input type="file" id="audio-file-input" class="hidden" accept="audio/*">
+                <label for="audio-file-input" class="upload-label">
+                    <svg class="upload-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+                        <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
+                        <polyline points="17 8 12 3 7 8"/>
+                        <line x1="12" y1="3" x2="12" y2="15"/>
+                    </svg>
+                    <span>Перетащите аудиофайл или нажмите для выбора</span>
+                    <span class="upload-hint">MP3, WAV, M4A или OGG</span>
+                </label>
             </div>
-            <div id="recordingStatus" class="recording-status"></div>
+        </div>
+
+        <!-- Режим записи -->
+        <div id="record-mode" class="mode-content hidden">
+            <div class="record-container">
+                <div class="record-status">
+                    <span id="recordingStatus" class="status-text">Готов к записи</span>
+                    <span id="recordingTime" class="recording-time">00:00</span>
+                </div>
+                <div class="record-controls">
+                    <button id="startRecord" class="btn btn-record">
+                        <svg class="record-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+                            <circle cx="12" cy="12" r="6"/>
+                        </svg>
+                        Начать запись
+                    </button>
+                    <button id="stopRecord" class="btn btn-stop hidden">
+                        <svg class="stop-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+                            <rect x="6" y="6" width="12" height="12"/>
+                        </svg>
+                        Остановить запись
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Информация о файле -->
+        <div id="file-info" class="file-info hidden">
+            <span class="file-name"></span>
+            <button type="button" class="btn-icon clear-file" aria-label="Удалить файл">&times;</button>
+        </div>
+
+        <!-- Прогресс распознавания -->
+        <div id="transcription-progress" class="progress hidden">
+            <div class="progress-bar">
+                <div class="progress-value"></div>
+            </div>
+            <p class="progress-text">Идет распознавание...</p>
         </div>
     </div>
 
-    <div class="transcript-column">
-        <h2 class="block-title">Конспект</h2>
-        <div id="live-transcript" class="transcript-container"></div>
-        <div id="download-container" class="download-container" style="display: none;">
-            <button class="download-btn">Скачать конспект (MD)</button>
-        </div>
-        <div class="terms-container" style="display: none;">
-            <h3>Найденные термины и определения</h3>
-            <div class="terms-list"></div>
+    <!-- Результат распознавания -->
+    <div class="card">
+        <h2 class="mb-4">Результат распознавания</h2>
+        <div id="live-transcript" class="transcript-content"></div>
+        <div id="download-container" class="download-container hidden">
+            <a href="#" class="btn btn-primary" download>Скачать конспект (MD)</a>
         </div>
     </div>
 </div>
 
 <script>
-const form = document.getElementById('upload-form');
-const fileInput = document.getElementById('file-input');
-const dropZone = document.getElementById('drop-zone');
-const fileInfo = document.getElementById('file-info');
-const fileName = fileInfo.querySelector('.file-name');
-const clearButton = fileInfo.querySelector('.clear-file');
-const liveTranscript = document.getElementById('live-transcript');
-const downloadContainer = document.getElementById('download-container');
-
-fileInput.addEventListener('change', handleFileSelect);
-clearButton.addEventListener('click', clearFile);
-
-function handleFileSelect(e) {
-    if (!fileInput.files.length) return;
+document.addEventListener('DOMContentLoaded', function() {
+    // Переключение режимов
+    const modeBtns = document.querySelectorAll('.btn-mode');
+    const uploadMode = document.getElementById('upload-mode');
+    const recordMode = document.getElementById('record-mode');
     
-    const file = fileInput.files[0];
-    fileName.textContent = file.name;
-    fileInfo.style.display = 'flex';
-    
-    uploadAndTranscribe(file);
-}
-
-function clearFile() {
-    fileInput.value = '';
-    fileInfo.style.display = 'none';
-    liveTranscript.innerHTML = '';
-    downloadContainer.style.display = 'none';
-}
-
-// Функция для скачивания файла
-function downloadFile(url) {
-    const xhr = new XMLHttpRequest();
-    xhr.open('GET', url, true);
-    xhr.responseType = 'blob';
-    
-    xhr.onload = function() {
-        if (this.status === 200) {
-            // Создаем временный URL для скачивания
-            const blob = new Blob([this.response], { type: 'text/markdown' });
-            const url = window.URL.createObjectURL(blob);
+    modeBtns.forEach(btn => {
+        btn.addEventListener('click', () => {
+            const mode = btn.dataset.mode;
+            modeBtns.forEach(b => b.classList.remove('active'));
+            btn.classList.add('active');
             
-            // Создаем ссылку и имитируем клик
-            const link = document.createElement('a');
-            link.style.display = 'none';
-            link.href = url;
-            link.download = `transcript_${new Date().toISOString().slice(0,19).replace(/[-:]/g, '')}.md`;
-            
-            document.body.appendChild(link);
-            link.click();
-            
-            // Очищаем
-            window.URL.revokeObjectURL(url);
-            document.body.removeChild(link);
-        }
-    };
-    
-    xhr.onerror = function() {
-        console.error('Ошибка при скачивании файла');
-    };
-    
-    xhr.send();
-}
-
-async function uploadAndTranscribe(file) {
-    const formData = new FormData();
-    formData.append('file', file);
-    
-    liveTranscript.innerHTML = '<p class="progress">Идет распознавание...</p>';
-    
-    try {
-        const response = await fetch('/transcribe-stream', {
-            method: 'POST',
-            body: formData
+            if (mode === 'upload') {
+                uploadMode.classList.remove('hidden');
+                recordMode.classList.add('hidden');
+            } else {
+                uploadMode.classList.add('hidden');
+                recordMode.classList.remove('hidden');
+            }
         });
-        
-        const result = await response.json();
-        
-        if (result.segments) {
-            liveTranscript.innerHTML = '';
-            result.segments.forEach(segment => {
-                const p = document.createElement('p');
-                p.textContent = segment;
-                liveTranscript.appendChild(p);
-            });
-        }
-        
-        // Отображаем термины
-        if (result.terms && result.terms.length > 0) {
-            const termsContainer = document.querySelector('.terms-container');
-            const termsList = termsContainer.querySelector('.terms-list');
-            
-            termsList.innerHTML = '';
-            result.terms.forEach(term => {
-                const termItem = document.createElement('div');
-                termItem.className = 'term-item';
-                
-                if (term.type === 'formula') {
-                    termItem.innerHTML = `<strong>Формула:</strong> ${term.term}`;
-                } else {
-                    termItem.innerHTML = `<strong>${term.term}</strong>`;
-                    if (term.definition) {
-                        termItem.innerHTML += ` - ${term.definition}`;
-                    }
-                }
-                
-                termsList.appendChild(termItem);
-            });
-            
-            termsContainer.style.display = 'block';
-        }
-        
-        if (result.md_file) {
-            downloadContainer.style.display = 'block';
-            const downloadBtn = downloadContainer.querySelector('.download-btn');
-            downloadBtn.onclick = () => {
-                downloadFile(result.md_file);
-            };
-        }
-        
-    } catch (error) {
-        console.error('Error:', error);
-        liveTranscript.innerHTML = '<p class="error">Произошла ошибка при распознавании</p>';
-    }
-}
+    });
 
-// Добавляем код для записи аудио
-let mediaRecorder;
-let audioChunks = [];
-let recordingTimer;
-let startTime;
+    // Загрузка файла
+    const audioFileInput = document.getElementById('audio-file-input');
+    const dropZone = document.getElementById('drop-zone');
+    const fileInfo = document.getElementById('file-info');
+    const fileName = fileInfo.querySelector('.file-name');
+    const clearButton = fileInfo.querySelector('.clear-file');
+    const progressContainer = document.getElementById('transcription-progress');
+    const progressBar = progressContainer.querySelector('.progress-value');
+    const liveTranscript = document.getElementById('live-transcript');
+    const downloadContainer = document.getElementById('download-container');
 
-const startRecordBtn = document.getElementById('startRecord');
-const stopRecordBtn = document.getElementById('stopRecord');
-const recordingTime = document.getElementById('recordingTime');
-const recordingStatus = document.getElementById('recordingStatus');
+    // Обработка перетаскивания файлов
+    dropZone.addEventListener('dragover', (e) => {
+        e.preventDefault();
+        dropZone.classList.add('dragover');
+    });
 
-// Переключение режимов
-document.querySelectorAll('.mode-btn').forEach(btn => {
-    btn.addEventListener('click', () => {
-        const mode = btn.dataset.mode;
-        document.querySelectorAll('.mode-btn').forEach(b => b.classList.remove('active'));
-        btn.classList.add('active');
+    dropZone.addEventListener('dragleave', () => {
+        dropZone.classList.remove('dragover');
+    });
+
+    dropZone.addEventListener('drop', (e) => {
+        e.preventDefault();
+        dropZone.classList.remove('dragover');
         
-        if (mode === 'upload') {
-            document.getElementById('upload-mode').style.display = 'block';
-            document.getElementById('record-mode').style.display = 'none';
-        } else {
-            document.getElementById('upload-mode').style.display = 'none';
-            document.getElementById('record-mode').style.display = 'block';
+        if (e.dataTransfer.files.length) {
+            handleFiles(e.dataTransfer.files);
         }
     });
-});
 
-// Запись аудио
-startRecordBtn.addEventListener('click', async () => {
-    try {
-        const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
-        mediaRecorder = new MediaRecorder(stream);
-        audioChunks = [];
+    audioFileInput.addEventListener('change', (e) => {
+        handleFiles(e.target.files);
+    });
+
+    clearButton.addEventListener('click', clearFile);
+
+    function handleFiles(files) {
+        if (!files.length) return;
         
-        mediaRecorder.ondataavailable = (event) => {
-            audioChunks.push(event.data);
-        };
+        const file = files[0];
+        if (!file.type.startsWith('audio/')) {
+            showError('Пожалуйста, выберите аудиофайл');
+            clearFile();
+            return;
+        }
         
-        mediaRecorder.onstop = async () => {
-            const audioBlob = new Blob(audioChunks, { type: 'audio/wav' });
-            await uploadAndTranscribe(audioBlob);
-        };
+        fileName.textContent = file.name;
+        fileInfo.classList.remove('hidden');
+        uploadAndTranscribe(file);
+    }
+
+    function clearFile() {
+        audioFileInput.value = '';
+        fileInfo.classList.add('hidden');
+        liveTranscript.innerHTML = '';
+        progressContainer.classList.add('hidden');
+        downloadContainer.classList.add('hidden');
+    }
+
+    // Запись аудио
+    const startRecordBtn = document.getElementById('startRecord');
+    const stopRecordBtn = document.getElementById('stopRecord');
+    const recordingTime = document.getElementById('recordingTime');
+    const recordingStatus = document.getElementById('recordingStatus');
+
+    let mediaRecorder;
+    let audioChunks = [];
+    let recordingTimer;
+    let startTime;
+
+    startRecordBtn.addEventListener('click', async () => {
+        try {
+            const stream = await navigator.mediaDevices.getUserMedia({ 
+                audio: {
+                    channelCount: 1,
+                    sampleRate: 44100
+                }
+            });
+            
+            startRecordBtn.classList.add('hidden');
+            stopRecordBtn.classList.remove('hidden');
+            
+            // Создаем AudioContext для конвертации в WAV
+            const audioContext = new AudioContext();
+            const audioSource = audioContext.createMediaStreamSource(stream);
+            const processor = audioContext.createScriptProcessor(4096, 1, 1);
+            
+            audioSource.connect(processor);
+            processor.connect(audioContext.destination);
+            
+            audioChunks = []; // Очищаем предыдущие чанки
+            
+            processor.onaudioprocess = (e) => {
+                const channelData = e.inputBuffer.getChannelData(0);
+                const buffer = new Float32Array(channelData);
+                audioChunks.push(buffer);
+            };
+            
+            // Сохраняем ссылки для последующей очистки
+            mediaRecorder = {
+                state: 'recording',
+                stop: () => {
+                    stream.getTracks().forEach(track => track.stop());
+                    processor.disconnect();
+                    audioSource.disconnect();
+                    
+                    // Конвертируем записанные данные в WAV
+                    const wavBlob = createWavBlob(audioChunks, audioContext.sampleRate);
+                    uploadAndTranscribe(new File([wavBlob], 'recording.wav', { type: 'audio/wav' }));
+                }
+            };
+            
+            startTime = Date.now();
+            updateRecordingTime();
+            recordingStatus.textContent = 'Идет запись...';
+            recordingStatus.classList.add('recording');
+            
+        } catch (error) {
+            showError('Ошибка доступа к микрофону: ' + error.message);
+        }
+    });
+
+    stopRecordBtn.addEventListener('click', () => {
+        if (mediaRecorder && mediaRecorder.state === 'recording') {
+            mediaRecorder.stop();
+            clearInterval(recordingTimer);
+            startRecordBtn.classList.remove('hidden');
+            stopRecordBtn.classList.add('hidden');
+            recordingStatus.textContent = 'Готов к записи';
+            recordingStatus.classList.remove('recording');
+        }
+    });
+
+    function updateRecordingTime() {
+        recordingTimer = setInterval(() => {
+            const duration = Date.now() - startTime;
+            const seconds = Math.floor((duration / 1000) % 60);
+            const minutes = Math.floor((duration / (1000 * 60)) % 60);
+            recordingTime.textContent = `${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`;
+        }, 1000);
+    }
+
+    // Функция для создания WAV файла
+    function createWavBlob(audioChunks, sampleRate) {
+        const numChannels = 1;
+        const bitsPerSample = 16;
         
-        mediaRecorder.start(1000); // Записываем чанками по 1 секунде
-        startTime = Date.now();
-        updateRecordingTime();
+        // Объединяем все чанки в один буфер
+        const length = audioChunks.reduce((acc, chunk) => acc + chunk.length, 0);
+        const buffer = new Float32Array(length);
+        let offset = 0;
         
-        startRecordBtn.style.display = 'none';
-        stopRecordBtn.style.display = 'block';
-        recordingTime.style.display = 'block';
-        recordingStatus.innerHTML = '<span class="recording-indicator"></span> Идет запись...';
+        for (const chunk of audioChunks) {
+            buffer.set(chunk, offset);
+            offset += chunk.length;
+        }
         
-    } catch (error) {
-        console.error('Error accessing microphone:', error);
-        recordingStatus.textContent = 'Ошибка доступа к микрофону';
+        // Конвертируем float32 в int16
+        const int16Buffer = new Int16Array(buffer.length);
+        for (let i = 0; i < buffer.length; i++) {
+            const s = Math.max(-1, Math.min(1, buffer[i]));
+            int16Buffer[i] = s < 0 ? s * 0x8000 : s * 0x7FFF;
+        }
+        
+        // Создаем WAV заголовок
+        const dataSize = int16Buffer.length * 2; // 2 байта на сэмпл
+        const headerSize = 44;
+        const totalSize = headerSize + dataSize;
+        
+        const header = new ArrayBuffer(headerSize);
+        const view = new DataView(header);
+        
+        // RIFF chunk descriptor
+        writeString(view, 0, 'RIFF');
+        view.setUint32(4, totalSize - 8, true);
+        writeString(view, 8, 'WAVE');
+        
+        // fmt sub-chunk
+        writeString(view, 12, 'fmt ');
+        view.setUint32(16, 16, true); // размер fmt chunk
+        view.setUint16(20, 1, true); // PCM = 1
+        view.setUint16(22, numChannels, true);
+        view.setUint32(24, sampleRate, true);
+        view.setUint32(28, sampleRate * numChannels * (bitsPerSample / 8), true); // байт в секунду
+        view.setUint16(32, numChannels * (bitsPerSample / 8), true); // байт на сэмпл
+        view.setUint16(34, bitsPerSample, true);
+        
+        // data sub-chunk
+        writeString(view, 36, 'data');
+        view.setUint32(40, dataSize, true);
+        
+        // Объединяем заголовок и данные
+        const blob = new Blob([header, int16Buffer], { type: 'audio/wav' });
+        return blob;
+    }
+
+    function writeString(view, offset, string) {
+        for (let i = 0; i < string.length; i++) {
+            view.setUint8(offset + i, string.charCodeAt(i));
+        }
+    }
+
+    // Загрузка и транскрибация
+    async function uploadAndTranscribe(file) {
+        const formData = new FormData();
+        formData.append('file', file);
+        
+        progressContainer.classList.remove('hidden');
+        progressBar.style.width = '0%';
+        progressBar.classList.add('active');
+        liveTranscript.innerHTML = '<p>Загрузка файла...</p>';
+        
+        try {
+            const response = await fetch('/transcribe-stream', {
+                method: 'POST',
+                headers: {
+                    'X-CSRFToken': document.querySelector('meta[name="csrf-token"]').getAttribute('content')
+                },
+                body: formData
+            });
+            
+            if (!response.ok) {
+                throw new Error(await response.text() || 'Ошибка при загрузке файла');
+            }
+            
+            const result = await response.json();
+            
+            liveTranscript.innerHTML = '';
+            if (result.segments) {
+                result.segments.forEach(segment => {
+                    const p = document.createElement('p');
+                    p.textContent = segment;
+                    liveTranscript.appendChild(p);
+                });
+            }
+            
+            if (result.terms && result.terms.length > 0) {
+                const termsSection = document.createElement('div');
+                termsSection.className = 'terms-section mt-4';
+                
+                const termsTitle = document.createElement('h3');
+                termsTitle.textContent = 'Термины и определения';
+                termsSection.appendChild(termsTitle);
+                
+                const termsList = document.createElement('div');
+                termsList.className = 'terms-list';
+                
+                result.terms.forEach(([term, definition]) => {
+                    const termItem = document.createElement('div');
+                    termItem.className = 'term-item';
+                    termItem.innerHTML = `<strong>${term}</strong>: ${definition}`;
+                    termsList.appendChild(termItem);
+                });
+                
+                termsSection.appendChild(termsList);
+                liveTranscript.appendChild(termsSection);
+            }
+            
+            if (result.math && result.math.length > 0) {
+                const mathSection = document.createElement('div');
+                mathSection.className = 'math-section mt-4';
+                
+                const mathTitle = document.createElement('h3');
+                mathTitle.textContent = 'Математические формулы';
+                mathSection.appendChild(mathTitle);
+                
+                result.math.forEach(([type, formula, description]) => {
+                    const mathItem = document.createElement('div');
+                    mathItem.className = 'math-item';
+                    mathItem.innerHTML = `
+                        <div class="formula">$$${formula}$$</div>
+                        <div class="description">${description}</div>
+                    `;
+                    mathSection.appendChild(mathItem);
+                });
+                
+                liveTranscript.appendChild(mathSection);
+            }
+            
+            if (result.quotes && result.quotes.length > 0) {
+                const quotesSection = document.createElement('div');
+                quotesSection.className = 'quotes-section mt-4';
+                
+                const quotesTitle = document.createElement('h3');
+                quotesTitle.textContent = 'Цитаты';
+                quotesSection.appendChild(quotesTitle);
+                
+                result.quotes.forEach(([type, person, quote]) => {
+                    const quoteItem = document.createElement('div');
+                    quoteItem.className = 'quote-item';
+                    quoteItem.innerHTML = `
+                        <blockquote>${quote}</blockquote>
+                        <cite>— ${person}</cite>
+                    `;
+                    quotesSection.appendChild(quoteItem);
+                });
+                
+                liveTranscript.appendChild(quotesSection);
+            }
+            
+            if (result.md_file) {
+                downloadContainer.classList.remove('hidden');
+                downloadContainer.querySelector('a').href = result.md_file;
+            }
+            
+        } catch (error) {
+            showError(error.message);
+        } finally {
+            progressContainer.classList.add('hidden');
+            progressBar.classList.remove('active');
+        }
+    }
+
+    function showError(message) {
+        liveTranscript.innerHTML = `<p class="error error-shake">${message}</p>`;
     }
 });
-
-stopRecordBtn.addEventListener('click', () => {
-    if (mediaRecorder && mediaRecorder.state === 'recording') {
-        mediaRecorder.stop();
-        clearInterval(recordingTimer);
-        
-        startRecordBtn.style.display = 'block';
-        stopRecordBtn.style.display = 'none';
-        recordingTime.style.display = 'none';
-        recordingStatus.textContent = 'Запись завершена';
-    }
-});
-
-function updateRecordingTime() {
-    recordingTimer = setInterval(() => {
-        const duration = Math.floor((Date.now() - startTime) / 1000);
-        const minutes = Math.floor(duration / 60).toString().padStart(2, '0');
-        const seconds = (duration % 60).toString().padStart(2, '0');
-        recordingTime.textContent = `${minutes}:${seconds}`;
-    }, 1000);
-}
 </script>
 {% endblock %} 

@@ -1,41 +1,86 @@
 {% extends "base.html" %}
 
 {% block content %}
-<div class="lectures-container">
-    <div class="lectures-header">
-        <h1>База лекций</h1>
-        <form action="{{ url_for('delete_all_lectures') }}" method="POST" class="delete-all-form" onsubmit="return confirm('Вы уверены, что хотите удалить все лекции?');">
-            <button type="submit" class="delete-all-btn">Удалить все лекции</button>
-        </form>
+<div class="dashboard-container lectures-container">
+    <div class="page-header">
+        <h1>Мои лекции</h1>
     </div>
-    
+
     <div class="lectures-list">
-        {% if lectures %}
-            {% for lecture in lectures %}
-            <div class="lecture-card">
-                <div class="lecture-info">
-                    <h3>Лекция от {{ lecture.date }}</h3>
-                    <p class="lecture-preview">{{ lecture.content[:200] }}...</p>
-                </div>
-                <div class="lecture-actions">
-                    <a href="{{ url_for('view_lecture', lecture_id=lecture.id) }}" class="action-btn view-btn">
-                        Просмотр
-                    </a>
-                    <a href="{{ url_for('edit_lecture', lecture_id=lecture.id) }}" class="action-btn edit-btn">
-                        Редактировать
-                    </a>
-                    <a href="{{ lecture.path }}" download class="action-btn download-btn">
-                        Скачать MD
-                    </a>
-                    <form action="{{ url_for('delete_lecture', lecture_id=lecture.id) }}" method="POST" class="delete-form" onsubmit="return confirm('Удалить эту лекцию?');">
-                        <button type="submit" class="action-btn delete-btn">Удалить</button>
-                    </form>
+        {% for lecture in lectures %}
+        <div class="lecture-item">
+            <div class="lecture-header">
+                <div>
+                    <h2 class="lecture-title">{{ lecture.title }}</h2>
+                    <div class="lecture-date">{{ lecture.created_at.strftime('%d.%m.%Y %H:%M') }}</div>
                 </div>
             </div>
-            {% endfor %}
+            
+            <div class="lecture-preview">
+                {{ lecture.content[:200] + '...' if lecture.content else 'Нет содержания' }}
+            </div>
+            
+            <div class="lecture-actions">
+                <a href="{{ url_for('view_lecture', lecture_id=lecture.id) }}" class="btn-action btn-view">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor">
+                        <path d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/>
+                        <path d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"/>
+                    </svg>
+                    Просмотр
+                </a>
+                
+                <a href="{{ url_for('edit_lecture', lecture_id=lecture.id) }}" class="btn-action btn-edit">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor">
+                        <path d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z"/>
+                    </svg>
+                    Редактировать
+                </a>
+                
+                <a href="{{ url_for('static', filename='transcripts/' + lecture.filename) }}" class="btn-action btn-download" download>
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor">
+                        <path d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"/>
+                    </svg>
+                    Скачать MD
+                </a>
+                
+                <button onclick="deleteLecture({{ lecture.id }})" class="btn-action btn-delete">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor">
+                        <path d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/>
+                    </svg>
+                    Удалить
+                </button>
+            </div>
+        </div>
         {% else %}
-            <p class="no-lectures">У вас пока нет сохраненных лекций</p>
-        {% endif %}
+        <div class="empty-state">
+            <p>У вас пока нет лекций. Создайте новую!</p>
+            <a href="{{ url_for('new_lecture') }}" class="btn btn-primary">Создать лекцию</a>
+        </div>
+        {% endfor %}
     </div>
 </div>
+
+<script>
+function deleteLecture(id) {
+    if (confirm('Вы уверены, что хотите удалить эту лекцию?')) {
+        fetch(`/delete_lecture/${id}`, {
+            method: 'DELETE',
+            headers: {
+                'X-CSRFToken': '{{ csrf_token() }}'
+            }
+        }).then(response => {
+            if (response.ok) {
+                window.location.reload();
+            } else {
+                response.json().then(data => {
+                    alert(data.error || 'Ошибка при удалении лекции');
+                });
+            }
+        }).catch(error => {
+            alert('Ошибка при удалении лекции');
+            console.error('Error:', error);
+        });
+    }
+}
+</script>
 {% endblock %} 
