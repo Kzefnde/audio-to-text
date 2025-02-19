@@ -17,4 +17,7 @@ static/transcripts/*
 venv/
 .venv/
 .env.local
-*.log 
+*.log
+logs/*
+!logs/.gitkeep
+gunicorn.pid 
